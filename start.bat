@@ -33,18 +33,10 @@ start "FlowSync-Backend" cmd /k cd /d %ROOT%\backend ^&^& java -Xmx1024m -classp
 
 start "FlowSync-Frontend" cmd /k cd /d %ROOT%\frontend ^&^& npm run serve
 
-if exist "%ROOT%\ngrok.exe" (
-    echo   ngrok.exe found - starting tunnel...
-    start "FlowSync-ngrok" cmd /k cd /d %ROOT% ^&^& ngrok http 8081
-) else (
-    echo   [Skip] ngrok.exe not found. Download: https://ngrok.com
-)
-
 echo.
 echo   Windows opened:
-echo     [FlowSync-Backend]  wait for "Started FlowsyncApiApplication"
-echo     [FlowSync-Frontend] wait for compile, then http://localhost:8081
-if exist "%ROOT%\ngrok.exe" echo     [FlowSync-ngrok]   share the public URL
+echo     [FlowSync-Backend]   wait for "Started FlowsyncApiApplication"
+echo     [FlowSync-Frontend]  wait for compile, then http://localhost:8081
 echo.
 echo   Login: leader / 123456  (admin)
 echo          member1 / 123456 (member)

@@ -17,8 +17,8 @@ FlowSync 是一个面向高校学生的轻量级小组任务协同管理系统�
 - **管理员系统** — 管理员可生成邀请码、升降级用户角色（降级自动转让项目）、审批 AI 额度申请
 - **AI 额度系统** — 负责人可申请 AI 使用次数，管理员审批，每次拆解消耗 1 次
 - **GitHub 集成** — GitHub OAuth 授权 + 仓库绑定 + 分支/提交/Issue/PR 只读展示
-- **内网穿透支持** — 集成 ngrok，一键生成公网访问地址
-- **一键启动** — `start.bat` 自动加载 `.env` 配置，前后端 + ngrok 三窗口并行
+- **局域网访问** — 同 WiFi 下设备可直接通过局域网 IP 访问
+- **一键启动** — `start.bat` 自动加载 `.env` 配置，前后端两窗口并行
 - **暗色主题 UI** — 登录页/主界面统一暗蓝风格，像素下落动画背景，毛玻璃卡片，顶部悬浮导航栏
 - **3D 翻转登录** — 登录/注册卡片 3D rotateY 翻转切换，滑块 + 文字链接双重触发
 
@@ -54,7 +54,6 @@ FlowSync 是一个面向高校学生的轻量级小组任务协同管理系统�
 | AI 模型     | DeepSeek（OpenAI 兼容 API）     | deepseek-chat | 免费额度 |
 | API 文档    | SpringDoc OpenAPI              | 2.1.0     | /doc.html |
 | 构建工具    | Maven Wrapper + Vue CLI        | —        | 无需预装 Maven |
-| 内网穿透    | ngrok                          | —        | 可选，一键公网访问 |
 
 ### 前后端通信
 
@@ -127,7 +126,7 @@ hgc.flowsyncapi
 │   ├── ApiResponse.java         # 统一响应 {success, message, data}
 │   └── JwtUtils.java            # JWT 生成/解析/验证
 └── config/
-    ├── CorsConfig.java          # 跨域（allow all origins for LAN/ngrok）
+    ├── CorsConfig.java          # 跨域（allow all origins for LAN）
     ├── OpenApiConfig.java       # SpringDoc
     ├── PasswordConfig.java      # BCryptPasswordEncoder Bean
     ├── JwtInterceptor.java      # JWT 拦截器（除 login/register 外全部校验）
@@ -243,7 +242,7 @@ frontend/src/
 start.bat
 ```
 
-自动弹出 2-3 个窗口：后端、前端、（如果装了 ngrok）公网隧道。
+自动弹出 2 个窗口：后端、前端。
 
 ### 6.3 配置 AI（可选）
 
@@ -313,15 +312,9 @@ npm run serve
 
 浏览器访问 `http://localhost:8081`，用 `leader / 123456` 登录。
 
-### 6.5 局域网/公网访问
+### 6.5 局域网访问
 
-**局域网：** 本机开热点 → 其他设备连热点 → 访问 `http://192.168.137.1:8081`
-
-**公网（ngrok）：**
-1. 下载 [ngrok](https://ngrok.com) → `ngrok.exe` 放项目根目录
-2. 一次性配置：`ngrok config add-authtoken 你的token`
-3. 运行 `start.bat`，会自动弹出 ngrok 窗口
-4. 分享 ngrok 提供的 `https://xxx.ngrok-free.app` 地址
+同 WiFi / 热点下的其他设备，访问前端启动时控制台输出的 `Network:` 地址（形如 `http://10.24.x.x:8081`）即可。
 
 > WebSocket 已配置 `auto://` 协议自动适配 HTTPS/WSS。
 
@@ -343,7 +336,7 @@ npm run serve
 | 8 | `init.sql` 导入乱码/超长 | MySQL 客户端默认 latin1 编码 | SQL 开头加 `SET NAMES utf8mb4;` |
 | 9 | 删除项目报 FK 约束错误 | 未级联删除关联数据 | Service 层 `@Transactional` 按序删子表；SQL 加 `ON DELETE CASCADE` |
 | 10 | `.bat` 双击乱码闪退 | UTF-8 中文在 CMD 中乱码→被当成命令 | 改为纯英文 |
-| 11 | ngrok 访问报 WebSocket 错误 | HTTPS 页面不允许 `ws://` | `vue.config.js` 设 `webSocketURL: 'auto://'` |
+| 11 | 局域网 WebSocket 错误 | HTTPS 页面不允许 `ws://` | `vue.config.js` 设 `webSocketURL: 'auto://'` |
 | 12 | FK `fk_log_operator` 重名 | `task_log` 和 `operation_log` 用了同名 FK | 重命名为 `fk_oplog_operator` |
 | 13 | 500 错误无堆栈 | 数据库未同步（缺 `operation_log` 表） | 重建数据库执行新版 init.sql |
 | 14 | AI 始终显示"不可用" | DeepSeek API Key 未注入到后端进程 | 通过环境变量 `DEEPSEEK_API_KEY` 或 `.env` 文件配置 |
@@ -360,7 +353,7 @@ npm run serve
 | 25 | GitHub OAuth `client_id` 为空 | `.env` 未配置 GitHub 密钥 | 注册 GitHub OAuth App → 填入 `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` |
 | 26 | `onMounted is not defined` | ProfilePanel.vue 新增 GitHub 逻辑时未导入 `onMounted` | import 中补上 `onMounted` |
 | 27 | `Table 'github_account' doesn't exist` | init.sql 新增了表但数据库未重建 | 删库重建执行新版 init.sql |
-| 28 | `redirect_uri is not associated` | GitHub OAuth App 回调地址与请求不匹配 | 在 GitHub 后台添加 ngrok 和 localhost 两个回调 URL |
+| 28 | `redirect_uri is not associated` | GitHub OAuth App 回调地址与请求不匹配 | 在 GitHub 后台添加公网和 localhost 两个回调 URL |
 | 29 | SSL `PKIX path building failed` | JDK 24 默认证书库不完整，无法验证 GitHub 证书 | `GitHubApiClient` 配置信任所有证书（开发环境） |
 | 30 | 授权后无法处理回调 | 前端缺少 `/github-callback` 路由 | 新增 `GithubCallback.vue` + 路由配置 |
 | 31 | AI 拆解 `timeout of 10000ms exceeded` | DeepSeek API 响应慢，超时 10s 不够 | Axios 全局 timeout 改为 60000ms |
@@ -582,7 +575,7 @@ appForXiaoxueqi/
 | 42 | `OverviewController` + `DashboardPanel.vue` 统计卡片 |
 | 43 | 端到端联调：admin 生成邀请码 → 注册负责人 → leader 创建项目 → AI拆解 → member1 更新进度 → 级联删除 |
 | 44 | 权限边界全验证：管理员全透明 + 降级转让项目 + 批量删除 |
-| 45 | `start.bat` / `start.ps1` + `.env` 自动加载 + ngrok + 窗口完整性测试 |
+| 45 | `start.bat` / `start.ps1` + `.env` 自动加载 + 窗口完整性测试 |
 | 46 | API 文档 `http://localhost:8080/doc.html` |
 
 ---
@@ -594,7 +587,7 @@ appForXiaoxueqi/
 | 2026-07-10 | 初始搭建：Spring Boot + Vue3 + MySQL + 5 表 CRUD + 前端权限控制 |
 | 2026-07-10 | BCrypt 密码加密 + 用户注册 |
 | 2026-07-10 | `createTime` 自动填充 |
-| 2026-07-10 | `start.bat` / `start.ps1` + ngrok 外网访问 |
+| 2026-07-10 | `start.bat` / `start.ps1` 局域网访问方案 |
 | 2026-07-10 | 后端权限校验：`isProjectOwner` + `listVisibleProjectIds` + 数据隔离 |
 | 2026-07-10 | 级联删除：`@Transactional` + `ON DELETE CASCADE` |
 | 2026-07-10 | JWT Token 认证 |
@@ -609,7 +602,7 @@ appForXiaoxueqi/
 | 2026-07-10 | AI 排除管理员：`generateTaskPlan` 查询成员时过滤管理员 |
 | 2026-07-10 | 批量删除：项目/任务多选 + 批量删除按钮 + 确认弹窗 |
 | 2026-07-10 | 项目转让：降级负责人时检测拥有项目 → 选择接手人 → 批量转让 + 降级 |
-| 2026-07-20 | 全局暖色调重构：蓝→琥珀/金，`#409EFF`→`#E6A23C`，所有 rgba 暗色背景→暖棕，主界面同步视频背景 |
+| 2026-07-21 | 清除 ngrok/SSH 隧道相关代码，仅保留局域网部署模式 |
 | 2026-07-20 | 登录页 3D 翻转卡片：滑块切换登录/注册，卡片 rotateY 翻转动画，蓝调暗色毛玻璃风格 |
 | 2026-07-20 | 主界面暗色主题统一：像素下落背景 + 顶部悬浮毛玻璃导航栏 + 全局毛玻璃卡片 + 暗色组件覆盖 |
 | 2026-07-20 | 修复暗色主题不生效 bug：`<style>` 拆分为 scoped + 全局两块，`:deep()` 编译正确 |
@@ -661,8 +654,7 @@ appForXiaoxueqi/
 | 4 | **项目所有权转让** | 管理员降级负责人时自动检测其拥有的项目 → 弹出转让弹窗 → 选择其他负责人接手 → 批量转让 + 降级，防止"幽灵项目" |
 | 5 | **批量删除** | 项目列表和任务列表支持多选 + 批量删除，带确认弹窗 |
 | 6 | **AI 任务拆解（DeepSeek）** | 接入 DeepSeek `deepseek-chat` 模型（OpenAI 兼容 API，免费额度），支持项目目标拆解为任务列表 + 智能推荐负责人。未配置 Key 时自动降级为固定模板 |
-| 7 | **一键启动脚本** | `start.bat`（CMD）/ `start.ps1`（PowerShell），自动读取 `.env` 注入 API Key，后端 + 前端 + ngrok 三窗口并行启动 |
-| 8 | **内网穿透** | 集成 ngrok，自动生成 HTTPS 公网地址，WebSocket 自适应 `ws://` / `wss://` |
+| 7 | **一键启动脚本** | `start.bat`（CMD）/ `start.ps1`（PowerShell），自动读取 `.env` 注入 API Key，后端 + 前端两窗口并行 |
 | 9 | **个人信息浮窗编辑** | 电话、邮箱、密码不直接展示在页面，改为行尾「修改」按钮 → 弹窗编辑 |
 | 10 | **注册角色选择** | 注册时可选择「组员」（直接注册）或「项目负责人」（需邀请码） |
 | 11 | **退出确认** | 退出登录时弹出确认弹窗，防止误操作 |

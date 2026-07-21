@@ -7,7 +7,7 @@ Vue 3 + Element Plus + Axios
 ```
 frontend/
 ├── package.json               # npm 依赖
-├── vue.config.js              # devServer 代理 + LAN/ngrok 配置
+├── vue.config.js              # devServer 代理 + LAN 配置
 ├── public/index.html
 └── src/
     ├── main.js                # 入口（Vue3 + ElementPlus + Router）
@@ -40,7 +40,7 @@ frontend/
 
 ```js
 devServer: {
-  host: '0.0.0.0',           // LAN/ngrok 访问
+  host: '0.0.0.0',           // LAN 访问
   port: 8081,
   allowedHosts: 'all',
   client: {

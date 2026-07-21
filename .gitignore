@@ -14,7 +14,6 @@ frontend/dist/
 .vscode/
 
 # 工具
-ngrok.exe
 .obsidian/
 *.docx
 package-lock.json

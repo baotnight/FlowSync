@@ -49,26 +49,9 @@ Start-Process powershell -ArgumentList @(
     "cd '$root\frontend'; Write-Host 'Frontend starting (Vue :8081)...' -ForegroundColor Yellow; npm run serve"
 )
 
-# ---- ngrok（如果已安装） ----
-$ngrokPath = Join-Path $root "ngrok.exe"
-if (Test-Path $ngrokPath) {
-    Write-Host "[3/3] Starting ngrok tunnel..." -ForegroundColor Green
-    Start-Process powershell -ArgumentList @(
-        "-NoExit",
-        "-Command",
-        "cd '$root'; Write-Host 'ngrok tunnel starting...' -ForegroundColor Yellow; .\ngrok http 8081"
-    )
-} else {
-    Write-Host "[3/3] ngrok not found - skip." -ForegroundColor DarkGray
-    Write-Host "  Download from https://ngrok.com and put ngrok.exe in project root." -ForegroundColor DarkGray
-}
-
 Write-Host ""
 Write-Host "  Backend  - wait for 'Started FlowsyncApiApplication'"
-Write-Host "  Frontend - wait for compile, then open http://localhost:8081"
-if (Test-Path $ngrokPath) {
-    Write-Host "  ngrok    - share the ngrok URL with others"
-}
+Write-Host "  Frontend - wait for compile, then http://localhost:8081 (LAN: check Network address in console)"
 Write-Host ""
 Write-Host "  Default accounts (password: 123456):" -ForegroundColor White
 Write-Host "    leader   - admin role, all features"
