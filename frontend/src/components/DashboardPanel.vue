@@ -37,10 +37,10 @@
           <div style="font-weight:bold">{{ item.owner }}/{{ item.repo }} — {{ item.path }}</div>
           <div style="font-size:12px;color:#e8ddd0;margin-top:4px">
             <template v-if="item.ready">
-              <span style="color:#67C23A">✅ 轮到您了！请检查远端最新版本后确认上传</span>
+              <span style="color:#67C23A">轮到您了！请检查远端最新版本后确认上传</span>
             </template>
             <template v-else>
-              ⏳ {{ item.currentHolder || '未知' }} 正在上传，等待中...
+              {{ item.currentHolder || '未知' }} 正在上传，等待中...
             </template>
           </div>
         </div>

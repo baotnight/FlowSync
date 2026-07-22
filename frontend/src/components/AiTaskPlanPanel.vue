@@ -29,7 +29,7 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleGenerate" :loading="generating" :disabled="!form.projectId || !form.goal">
-            🤖 AI 拆解任务
+            AI 拆解任务
           </el-button>
         </el-form-item>
       </el-form>
@@ -84,7 +84,7 @@
         <li>确认前可以调整每个任务的负责人</li>
         <li>确认后一键导入到任务管理中</li>
         <li v-if="!apiConfigured" style="color:#E6A23C">
-          ⚠️ 未检测到 AI API Key，将使用降级方案（固定模板）
+          未检测到 AI API Key，将使用降级方案（固定模板）
         </li>
       </ul>
     </el-card>

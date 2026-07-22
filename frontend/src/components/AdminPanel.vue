@@ -82,7 +82,7 @@
 
     <!-- 转让项目所有权弹窗：降级负责人时需指定接手人 -->
     <el-dialog title="转让项目所有权" v-model="transferVisible" width="500px">
-      <p style="margin-bottom:12px;color:#E6A23C">⚠️ 该用户拥有 {{ transferProjects.length }} 个项目，降级前需指定接手人：</p>
+      <p style="margin-bottom:12px;color:#E6A23C">该用户拥有 {{ transferProjects.length }} 个项目，降级前需指定接手人：</p>
       <el-table :data="transferProjects" border size="small" max-height="200" style="margin-bottom:16px">
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column prop="name" label="项目名称" />

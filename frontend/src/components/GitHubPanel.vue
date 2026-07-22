@@ -231,12 +231,12 @@
           </div>
           <!-- 上传排队提示 -->
           <div v-if="uploadQueue" style="text-align:center;padding:20px;margin:8px 0;background:rgba(230,162,60,0.1);border-radius:4px">
-            <p style="color:#E6A23C">⏳ <strong>{{ uploadQueue.currentHolder }}</strong> 正在上传，您排在第 <strong>{{ uploadQueue.queuePosition }}</strong> 位</p>
+            <p style="color:#E6A23C"><strong>{{ uploadQueue.currentHolder }}</strong> 正在上传，您排在第 <strong>{{ uploadQueue.queuePosition }}</strong> 位</p>
             <p style="color:#d0c0b0;font-size:12px">每 3 秒自动检查，轮到您时将拉取远端最新版本供差分对比</p>
           </div>
           <!-- 上传就绪 — 差分对比 -->
           <div v-if="uploadReady" style="padding:12px;margin:8px 0;background:rgba(103,194,58,0.1);border-radius:4px">
-            <p style="color:#67C23A;margin-bottom:8px">✅ 轮到您了！请检查远端最新版本与您的修改：</p>
+            <p style="color:#67C23A;margin-bottom:8px">轮到您了！请检查远端最新版本与您的修改：</p>
             <div v-if="diffContent" style="max-height:200px;overflow:auto;margin-bottom:8px">
               <p style="font-size:12px;color:#d0c0b0;margin-bottom:4px">远端最新版本（仓库）：</p>
               <pre style="background:#1e1e1e;color:#d4d4d4;padding:8px;border-radius:4px;font-size:12px;line-height:1.4">{{ diffContent }}</pre>

@@ -20,3 +20,5 @@ package-lock.json
 # 系统文件
 Thumbs.db
 *.log
+
+STUDY.md
