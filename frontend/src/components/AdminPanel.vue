@@ -42,7 +42,7 @@
               <el-button v-if="row.role === '组员'" size="small" type="success"
                          @click="handleChangeRole(row, '负责人')">升为负责人</el-button>
             </template>
-            <span v-else style="color:#909399">—</span>
+            <span v-else style="color:#d0c0b0">—</span>
           </template>
         </el-table-column>
       </el-table>
@@ -74,7 +74,7 @@
               <el-button size="small" type="success" @click="handleApprove(row, true)">批准</el-button>
               <el-button size="small" type="danger" @click="handleApprove(row, false)">拒绝</el-button>
             </template>
-            <span v-else style="color:#909399">—</span>
+            <span v-else style="color:#d0c0b0">—</span>
           </template>
         </el-table-column>
       </el-table>

@@ -27,9 +27,58 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </script>
 
 <style>
-/* 全局暗色背景 */
+/* === 自定义字体 === */
+@font-face {
+  font-family: 'Zen Maru Gothic';
+  src: url('~@/assets/fonts/font-zen-maru-gothic-300-normal-latin-0777cbdcf1983e64.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Zen Maru Gothic';
+  src: url('~@/assets/fonts/font-zen-maru-gothic-700-normal-latin-0f7c5e2ce7cab7eb.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('~@/assets/fonts/font-inter-300-normal-latin-b92787725bce141b.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('~@/assets/fonts/font-inter-400-normal-latin-07431a16dd76433e.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('~@/assets/fonts/font-jetbrains-mono-400-normal-latin-cc5f60fd46e42cc9.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Great Vibes';
+  src: url('~@/assets/fonts/GreatVibes-Regular-2.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 全局应用字体 */
 html, body {
-  background: #0a0f1e;
+  background: #1a1008;
+  font-family: 'Inter', 'Zen Maru Gothic', sans-serif;
+}
+/* 代码等宽字体 */
+code, pre {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
 }
 /* 返回顶部按钮 */
 .back-to-top {
@@ -39,7 +88,7 @@ html, body {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(64, 158, 255, 0.85);
+  background: rgba(240, 168, 56, 0.85);
   backdrop-filter: blur(8px);
   color: #fff;
   display: flex;
@@ -47,12 +96,12 @@ html, body {
   justify-content: center;
   cursor: pointer;
   z-index: 1000;
-  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.35);
+  box-shadow: 0 4px 16px rgba(240, 168, 56, 0.35);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .back-to-top:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 24px rgba(64, 158, 255, 0.5);
+  box-shadow: 0 6px 24px rgba(240, 168, 56, 0.5);
 }
 .back-to-top:active {
   transform: scale(0.9);

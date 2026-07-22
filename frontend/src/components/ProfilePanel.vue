@@ -79,7 +79,7 @@
     <!-- 头像修改弹窗 -->
     <el-dialog title="修改头像" v-model="showAvatarPicker" width="380px">
       <div v-if="avatarPreview" style="text-align:center;margin-bottom:12px">
-        <img :src="avatarPreview" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #409EFF" />
+        <img :src="avatarPreview" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #f0a838" />
         <p style="font-size:12px;color:#67C23A;margin-top:4px">头像已更新</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px">
@@ -106,7 +106,7 @@
         <el-button size="small" type="danger" @click="handleGithubRevoke" :loading="ghLoading">解除绑定</el-button>
       </div>
       <div v-else>
-        <p style="color:#909399;margin-bottom:12px">连接 GitHub 后可绑定仓库并查看代码状态</p>
+        <p style="color:#d0c0b0;margin-bottom:12px">连接 GitHub 后可绑定仓库并查看代码状态</p>
         <el-button size="small" type="primary" @click="handleGithubConnect" :loading="ghLoading">连接 GitHub</el-button>
       </div>
     </el-card>
@@ -127,7 +127,7 @@ const saving = ref(false)
 const pwdFormRef = ref(null)
 
 // 头像：基于用户名哈希选色，首字母展示
-const avatarColors = ['#409EFF','#67C23A','#E6A23C','#F56C6C','#00d4ff','#8b5cf6']
+const avatarColors = ['#f0a838','#67C23A','#E6A23C','#F56C6C','#00d4ff','#8b5cf6']
 const storedColor = sessionStorage.getItem('avatarColor')
 const avatarColor = ref(storedColor || avatarColors[hashCode(props.currentUser?.realName || 'U') % avatarColors.length])
 const avatarText = computed(() => (props.currentUser?.realName || 'U').charAt(0).toUpperCase())

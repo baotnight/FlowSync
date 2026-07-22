@@ -3,7 +3,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h2>AI 任务拆解</h2>
       <div style="display:flex;align-items:center;gap:12px">
-        <span style="color:#606266">剩余次数：</span>
+        <span style="color:#d8d0c8">剩余次数：</span>
         <el-tag :type="quotaLeft > 0 ? 'success' : 'danger'" size="large">{{ quotaLeft }}</el-tag>
         <el-button size="small" @click="showRequestDialog = true">申请额度</el-button>
       </div>
@@ -78,7 +78,7 @@
     <!-- 提示信息 -->
     <el-card v-if="!planResult">
       <template #header>使用说明</template>
-      <ul style="line-height:2;color:#606266">
+      <ul style="line-height:2;color:#d8d0c8">
         <li>选择目标项目，填写项目目标，点击「AI 拆解任务」</li>
         <li>AI 会根据项目目标自动拆分任务并推荐负责人</li>
         <li>确认前可以调整每个任务的负责人</li>
@@ -105,8 +105,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { getProjects, getUsers, aiTaskPlan, aiImportPlan, requestQuota } from '../api'
+import { ref, computed, onMounted, watch } from 'vue'
+import { getProjects, getUsers, aiTaskPlan, aiImportPlan, requestQuota, getProjectMembers } from '../api'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps({ currentUser: Object })
@@ -123,12 +123,24 @@ const requestForm = ref({ amount: 5 })
 
 const form = ref({ projectId: null, goal: '', description: '' })
 
+// 选择项目后加载小组成员
+watch(() => form.value.projectId, async (pid) => {
+  if (!pid) { users.value = []; return }
+  const res = await getProjectMembers(pid)
+  if (res.success && res.data && res.data.length > 0) {
+    users.value = res.data
+  } else {
+    // 未设小组成员时加载所有非管理员用户
+    const uRes = await getUsers()
+    if (uRes.success) users.value = (uRes.data || []).filter(u => u.role !== '管理员')
+  }
+})
+
 const quotaLeft = computed(() => props.currentUser?.aiQuota ?? 0)
 
 onMounted(async () => {
-  const [pRes, uRes] = await Promise.all([getProjects(), getUsers()])
+  const pRes = await getProjects()
   if (pRes.success) projects.value = pRes.data || []
-  if (uRes.success) users.value = uRes.data || []
 })
 
 async function handleRequestQuota() {

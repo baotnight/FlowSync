@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hgc.flowsyncapi.dto.*;
+import hgc.flowsyncapi.entity.ProjectMember;
 import hgc.flowsyncapi.entity.User;
+import hgc.flowsyncapi.mapper.ProjectMemberMapper;
 import hgc.flowsyncapi.mapper.UserMapper;
 import hgc.flowsyncapi.service.QwenService;
 import jakarta.annotation.PostConstruct;
@@ -27,14 +29,17 @@ public class QwenServiceImpl implements QwenService {
 
     private final String apiKey;
     private final UserMapper userMapper;
+    private final ProjectMemberMapper projectMemberMapper;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
 
     public QwenServiceImpl(@Value("${deepseek.api-key:}") String apiKey,
                            UserMapper userMapper,
+                           ProjectMemberMapper projectMemberMapper,
                            ObjectMapper objectMapper) {
         this.apiKey = apiKey;
         this.userMapper = userMapper;
+        this.projectMemberMapper = projectMemberMapper;
         this.objectMapper = objectMapper;
         this.restTemplate = new RestTemplate();
     }
@@ -70,9 +75,18 @@ public class QwenServiceImpl implements QwenService {
         }
 
         try {
-            // 查询成员列表（排除管理员）
-            List<User> members = userMapper.selectList(
-                    new QueryWrapper<User>().ne("role", "管理员"));
+            // 查询项目小组成员（排除管理员）
+            List<ProjectMember> pms = projectMemberMapper.selectList(
+                    new QueryWrapper<ProjectMember>().eq("project_id", request.getProjectId()));
+            List<User> members;
+            if (pms.isEmpty()) {
+                // 未设小组成员时，回退到所有非管理员用户
+                members = userMapper.selectList(
+                        new QueryWrapper<User>().ne("role", "管理员"));
+            } else {
+                List<Long> memberIds = pms.stream().map(ProjectMember::getUserId).collect(Collectors.toList());
+                members = userMapper.selectBatchIds(memberIds);
+            }
             String memberList = members.stream()
                     .map(u -> u.getId() + " - " + u.getRealName() + "(" + u.getRole() + ")")
                     .collect(Collectors.joining("\n"));

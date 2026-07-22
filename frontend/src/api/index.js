@@ -49,6 +49,11 @@ export const saveProject = (data) => api.post('/projects', data)
 export const deleteProject = (id) => api.delete(`/projects/${id}`)
 export const batchDeleteProjects = (ids) => api.post('/projects/batch-delete', { ids })
 
+// 项目成员管理
+export const getProjectMembers = (projectId) => api.get(`/projects/${projectId}/members`)
+export const setProjectMembers = (projectId, userIds) => api.put(`/projects/${projectId}/members`, { userIds })
+export const getAvailableMembers = (projectId) => api.get(`/projects/${projectId}/available-members`)
+
 // 任务
 export const getTasks = (projectId) => api.get('/tasks', { params: { projectId } })
 export const saveTask = (data) => api.post('/tasks', data)

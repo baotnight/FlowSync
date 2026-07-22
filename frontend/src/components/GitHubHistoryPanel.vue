@@ -7,7 +7,7 @@
       </el-select>
     </div>
 
-    <el-card v-if="!commits.length && selectedProjectId" style="text-align:center;padding:40px;color:#909399" v-loading="loading">
+    <el-card v-if="!commits.length && selectedProjectId" style="text-align:center;padding:40px;color:#d0c0b0" v-loading="loading">
       <template v-if="!loading">该项目暂无提交记录或未绑定仓库</template>
     </el-card>
 
@@ -15,11 +15,11 @@
       <el-timeline>
         <el-timeline-item v-for="c in commits" :key="c.sha"
                           :timestamp="c.date" placement="top"
-                          :color="c.flowSyncUser ? '#409EFF' : '#909399'">
+                          :color="c.flowSyncUser ? '#f0a838' : '#d0c0b0'">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
               <div style="font-weight:bold;margin-bottom:4px">{{ c.message }}</div>
-              <div style="font-size:12px;color:#909399">
+              <div style="font-size:12px;color:#d0c0b0">
                 SHA: <code>{{ c.sha }}</code>
                 <template v-if="c.githubLogin">
                   | GitHub: <strong>{{ c.githubLogin }}</strong>

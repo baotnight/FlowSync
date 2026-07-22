@@ -1,12 +1,25 @@
 <template>
   <div>
-    <h2 style="margin-bottom:20px">控制台</h2>
-    <el-row :gutter="20">
+    <!-- Hero 区域 -->
+    <div class="overview-hero">
+      <div class="hero-copy">
+        <span class="hero-eyebrow">Command Center</span>
+        <h1>让项目、任务和成员<br/>在同一个节奏里流动</h1>
+        <p>从总览判断状态，从卡片进入模块，用表格处理精确数据。</p>
+      </div>
+    </div>
+
+    <!-- 指标卡片 -->
+    <el-row :gutter="16">
       <el-col :span="6" v-for="item in stats" :key="item.label">
-        <el-card shadow="hover" class="stat-card" @click="goTo(item.panel)">
-          <div style="text-align:center">
-            <div style="font-size:14px;color:#909399">{{ item.label }}</div>
-            <div style="font-size:36px;font-weight:bold;color:#409EFF;margin-top:8px">{{ item.value }}</div>
+        <el-card shadow="hover" class="stat-card metric-card" :class="item.tone" @click="goTo(item.panel)">
+          <span>{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+          <em>{{ item.desc }}</em>
+          <div class="metric-preview">
+            <b>{{ item.previewTitle }}</b>
+            <p>{{ item.previewText }}</p>
+            <small>{{ item.previewSmall }}</small>
           </div>
         </el-card>
       </el-col>
@@ -22,7 +35,7 @@
            :style="{ background: item.ready ? 'rgba(103,194,58,0.12)' : 'rgba(230,162,60,0.12)' }">
         <div>
           <div style="font-weight:bold">{{ item.owner }}/{{ item.repo }} — {{ item.path }}</div>
-          <div style="font-size:12px;color:#909399;margin-top:4px">
+          <div style="font-size:12px;color:#e8ddd0;margin-top:4px">
             <template v-if="item.ready">
               <span style="color:#67C23A">✅ 轮到您了！请检查远端最新版本后确认上传</span>
             </template>
@@ -52,13 +65,13 @@
           </div>
         </div>
       </template>
-      <div v-if="!selectedProject" style="text-align:center;padding:20px;color:#909399">选择项目查看 Git 提交历史</div>
-      <div v-else-if="commits.length === 0" style="text-align:center;padding:20px;color:#909399" v-loading="commitLoading">暂无提交记录或未绑定仓库</div>
+      <div v-if="!selectedProject" style="text-align:center;padding:20px;color:#e8ddd0">选择项目查看 Git 提交历史</div>
+      <div v-else-if="commits.length === 0" style="text-align:center;padding:20px;color:#e8ddd0" v-loading="commitLoading">暂无提交记录或未绑定仓库</div>
       <el-timeline v-else>
         <el-timeline-item v-for="c in commits" :key="c.sha" :timestamp="c.date" placement="top"
-                          :color="c.flowSyncUser ? '#409EFF' : '#909399'">
+                          :color="c.flowSyncUser ? '#f0a838' : '#e8ddd0'">
           <div>{{ c.message }}</div>
-          <div style="font-size:12px;color:#909399;margin-top:4px">
+          <div style="font-size:12px;color:#e8ddd0;margin-top:4px">
             SHA: <code>{{ c.sha }}</code>
             <template v-if="c.githubLogin"> | <strong>{{ c.githubLogin }}</strong></template>
             <template v-if="c.flowSyncUser"> | <el-tag size="small" type="success">{{ c.flowSyncUser }}</el-tag></template>
@@ -93,7 +106,7 @@
 
     <!-- 文件内容预览弹窗 -->
     <el-dialog :title="'审核文件 — ' + previewFile.path" v-model="previewVisible" width="800px" top="2vh">
-      <div style="font-size:12px;color:#909399;margin-bottom:8px">
+      <div style="font-size:12px;color:#e8ddd0;margin-bottom:8px">
         提交人：{{ previewFile.submitterName }} | 分支：{{ previewFile.branch }} | 时间：{{ previewFile.createTime }}
       </div>
       <pre style="background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:4px;overflow:auto;max-height:500px;font-size:13px;line-height:1.5">{{ previewFile.decoded }}</pre>
@@ -113,10 +126,10 @@ import { pendingUploads } from '../store/uploadQueue'
 import { ElMessage } from 'element-plus'
 
 const stats = ref([
-  { label: '系统用户', value: 0, panel: 'admin' },
-  { label: '项目总数', value: 0, panel: 'projects' },
-  { label: '任务总数', value: 0, panel: 'tasks' },
-  { label: '总结总数', value: 0, panel: 'summaries' }
+  { label: '系统用户', value: 0, panel: 'admin', tone: 'tone-blue', desc: '当前注册用户', previewTitle: '成员管理', previewText: '管理用户角色与权限', previewSmall: '点击进入成员管理面板' },
+  { label: '项目总数', value: 0, panel: 'projects', tone: 'tone-green', desc: '协作项目总量', previewTitle: '项目管理', previewText: '创建与编排项目', previewSmall: '点击进入项目管理面板' },
+  { label: '任务总数', value: 0, panel: 'tasks', tone: 'tone-amber', desc: '当前任务总量', previewTitle: '任务管理', previewText: '分配与追踪任务', previewSmall: '点击进入任务管理面板' },
+  { label: '总结总数', value: 0, panel: 'summaries', tone: 'tone-purple', desc: '累计复盘报告', previewTitle: '总结管理', previewText: '沉淀项目阶段报告', previewSmall: '点击进入总结管理面板' }
 ])
 
 const emit = defineEmits(['navigate'])
@@ -233,6 +246,112 @@ async function loadInitialData() {
 }
 </script>
 <style scoped>
-.stat-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
-.stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(64,158,255,0.2); border-color: rgba(64,158,255,0.4); }
+/* Hero 区域 */
+.overview-hero {
+  position: relative;
+  display: grid;
+  min-height: 150px;
+  padding: 22px 26px;
+  margin-bottom: 16px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(240, 168, 56, 0.22), rgba(248, 200, 96, 0.12), rgba(20, 14, 8, 0.3));
+  border: 1px solid rgba(230, 162, 60, 0.25);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.2);
+}
+.hero-eyebrow {
+  color: #f8c860;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.hero-copy { position: relative; z-index: 1; }
+.hero-copy h1 {
+  margin: 8px 0 10px;
+  font-size: 28px;
+  line-height: 1.15;
+  color: #fff8f2;
+}
+.hero-copy p {
+  margin: 0;
+  color: #e0d4c8;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+/* 指标卡片 */
+.metric-card {
+  position: relative !important;
+  overflow: visible !important;
+  display: grid;
+  gap: 6px;
+  padding: 18px 16px !important;
+  cursor: pointer;
+  isolation: isolate;
+  transition: transform 0.28s cubic-bezier(.2,.8,.2,1), box-shadow 0.28s, border-color 0.28s;
+}
+.metric-card:hover {
+  transform: translateY(-6px);
+  z-index: 12;
+  border-color: rgba(240, 168, 56, 0.5) !important;
+}
+.metric-card span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e0d4c8;
+}
+.metric-card strong {
+  font-size: 38px;
+  color: #f0a838;
+}
+.metric-card em {
+  font-style: normal;
+  font-size: 12px;
+  color: #e0d4c8;
+}
+/* 悬浮预览 */
+.metric-preview {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: calc(100% - 10px);
+  z-index: 20;
+  display: grid;
+  gap: 6px;
+  min-height: 90px;
+  padding: 14px 15px;
+  border: 1px solid rgba(240, 168, 56, 0.3);
+  border-radius: 18px;
+  color: #f5e5d8;
+  background: rgba(30, 18, 10, 0.92);
+  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(16px);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(12px) scale(0.94);
+  transform-origin: bottom center;
+  transition: opacity 0.22s ease, transform 0.34s cubic-bezier(.18,.88,.32,1.16);
+}
+.metric-card:hover .metric-preview {
+  opacity: 1;
+  transform: translateY(-7px) scale(1);
+}
+.metric-preview b {
+  font-size: 14px;
+  line-height: 1.15;
+  color: #f0a838;
+}
+.metric-preview p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f5e5d8;
+}
+.metric-preview small {
+  display: block;
+  color: #e0d4c8;
+  font-size: 12px;
+  line-height: 1.45;
+}
 </style>

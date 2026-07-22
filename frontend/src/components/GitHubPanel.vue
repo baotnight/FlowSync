@@ -50,7 +50,7 @@
           </template>
         </el-table-column>
       </el-table>
-      <div v-if="selectedAuthRepo" style="margin-top:12px;color:#409EFF">
+      <div v-if="selectedAuthRepo" style="margin-top:12px;color:#f0a838">
         已选择：{{ selectedAuthRepo.full_name }}
       </div>
       <template #footer>
@@ -63,7 +63,7 @@
 
     <!-- 仓库信息 -->
     <el-card v-if="!repo" style="margin-bottom:16px">
-      <p style="color:#909399">未绑定 GitHub 仓库。选择一个项目后，可为其绑定仓库。</p>
+      <p style="color:#d0c0b0">未绑定 GitHub 仓库。选择一个项目后，可为其绑定仓库。</p>
       <el-button v-if="selectedProjectId" type="primary" size="small" style="margin-top:8px" @click="openBindDialog">绑定仓库</el-button>
     </el-card>
 
@@ -198,7 +198,7 @@
         <el-table-column prop="description" label="描述" show-overflow-tooltip />
         <el-table-column prop="language" label="语言" width="80" />
       </el-table>
-      <div v-if="selectedRepo" style="margin-top:12px;color:#409EFF">
+      <div v-if="selectedRepo" style="margin-top:12px;color:#f0a838">
         已选择：{{ selectedRepo.full_name }}
       </div>
       <template #footer>
@@ -208,7 +208,7 @@
     </el-dialog>
 
     <!-- 文件树 + 源码查看弹窗 -->
-    <el-dialog :title="'源码浏览 — ' + selectedBranch" v-model="treeVisible" width="1000px" top="2vh">
+    <el-dialog :title="'源码浏览 — ' + selectedBranch" v-model="treeVisible" width="1000px" top="80px">
       <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center">
         <el-button size="small" @click="openNewFileDialog">新建文件</el-button>
         <el-button size="small" @click="openNewFolderDialog">新建文件夹</el-button>
@@ -226,19 +226,19 @@
         </div>
         <!-- 源码 -->
         <div style="flex:1;overflow-y:auto;overflow-x:hidden;padding-left:12px;word-break:break-all">
-          <div v-if="!selectedFile" style="color:#909399;text-align:center;margin-top:100px">
+          <div v-if="!selectedFile" style="color:#d0c0b0;text-align:center;margin-top:100px">
             点击左侧文件查看源码
           </div>
           <!-- 上传排队提示 -->
           <div v-if="uploadQueue" style="text-align:center;padding:20px;margin:8px 0;background:rgba(230,162,60,0.1);border-radius:4px">
             <p style="color:#E6A23C">⏳ <strong>{{ uploadQueue.currentHolder }}</strong> 正在上传，您排在第 <strong>{{ uploadQueue.queuePosition }}</strong> 位</p>
-            <p style="color:#909399;font-size:12px">每 3 秒自动检查，轮到您时将拉取远端最新版本供差分对比</p>
+            <p style="color:#d0c0b0;font-size:12px">每 3 秒自动检查，轮到您时将拉取远端最新版本供差分对比</p>
           </div>
           <!-- 上传就绪 — 差分对比 -->
           <div v-if="uploadReady" style="padding:12px;margin:8px 0;background:rgba(103,194,58,0.1);border-radius:4px">
             <p style="color:#67C23A;margin-bottom:8px">✅ 轮到您了！请检查远端最新版本与您的修改：</p>
             <div v-if="diffContent" style="max-height:200px;overflow:auto;margin-bottom:8px">
-              <p style="font-size:12px;color:#909399;margin-bottom:4px">远端最新版本（仓库）：</p>
+              <p style="font-size:12px;color:#d0c0b0;margin-bottom:4px">远端最新版本（仓库）：</p>
               <pre style="background:#1e1e1e;color:#d4d4d4;padding:8px;border-radius:4px;font-size:12px;line-height:1.4">{{ diffContent }}</pre>
             </div>
             <div style="display:flex;gap:8px">

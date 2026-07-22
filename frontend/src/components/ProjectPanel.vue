@@ -43,7 +43,7 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-            <span v-else style="color:#c0c4cc">—</span>
+            <span v-else style="color:#b8b0a8">—</span>
           </template>
         </template>
       </el-table-column>
@@ -85,6 +85,14 @@
         <el-form-item label="结束日期">
           <el-date-picker v-model="form.endDate" type="date" style="width:100%" value-format="YYYY-MM-DD" />
         </el-form-item>
+        <el-form-item label="小组成员">
+          <el-checkbox-group v-model="selectedMemberIds">
+            <el-checkbox v-for="u in availableMembers" :key="u.id" :label="u.id" border style="margin-bottom:8px">
+              {{ u.realName }} ({{ u.role }})
+            </el-checkbox>
+          </el-checkbox-group>
+          <div v-if="availableMembers.length === 0" style="color:#e0d4c8;font-size:13px">暂无可选成员</div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -122,7 +130,7 @@
         <el-table-column prop="description" label="描述" show-overflow-tooltip />
         <el-table-column prop="language" label="语言" width="80" />
       </el-table>
-      <div v-if="selectedBindRepo" style="margin-top:12px;color:#409EFF">
+      <div v-if="selectedBindRepo" style="margin-top:12px;color:#f0a838">
         已选择：{{ selectedBindRepo.full_name }}
       </div>
       <template #footer>
@@ -135,7 +143,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { getProjects, saveProject, deleteProject, batchDeleteProjects, getUsers, githubCreateRepo, githubBindRepo, githubOwnerRepositories, githubProjectStatus, archiveProject } from '../api'
+import { getProjects, saveProject, deleteProject, batchDeleteProjects, getUsers, githubCreateRepo, githubBindRepo, githubOwnerRepositories, githubProjectStatus, archiveProject, getProjectMembers, setProjectMembers, getAvailableMembers } from '../api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const props = defineProps({ currentUser: Object })
@@ -233,15 +241,33 @@ async function confirmBindRepo() {
   } finally { bindRepoLoading.value = false }
 }
 
-function openDialog(row) {
+const availableMembers = ref([])
+const selectedMemberIds = ref([])
+
+async function openDialog(row) {
   form.value = row ? { ...row } : { name: '', description: '', status: '未开始', priority: '中', startDate: '', endDate: '' }
   dialogVisible.value = true
+  // 加载可选成员
+  selectedMemberIds.value = []
+  const availRes = await getAvailableMembers(form.value.id || 0)
+  if (availRes.success) availableMembers.value = availRes.data || []
+  // 编辑时加载已有成员
+  if (row && row.id) {
+    const memRes = await getProjectMembers(row.id)
+    if (memRes.success && memRes.data) {
+      selectedMemberIds.value = memRes.data.map(u => u.id)
+    }
+  }
 }
 
 // 保存项目（新建或编辑）
 async function handleSave() {
   const res = await saveProject(form.value)
   if (res.success) {
+    const projectId = res.data?.id || form.value.id
+    if (projectId) {
+      await setProjectMembers(projectId, selectedMemberIds.value)
+    }
     ElMessage.success('保存成功')
     dialogVisible.value = false
     fetchProjects()
