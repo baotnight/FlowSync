@@ -4,19 +4,38 @@ MySQL 8.x — 数据库名 `flowsync_simple`，字符集 `utf8mb4`
 
 ## 文件
 
-- `init.sql` — 完整的 DDL + 预置数据（含 BCrypt 密码哈希）
+| 文件 | 说明 |
+|------|------|
+| `init.sql` | 完整 DDL + 预置数据（含 BCrypt 密码哈希），12 张核心表 |
+| `migrate_add_project_members.sql` | 迁移：项目小组成员表 |
+| `migrate_add_subtasks_comments.sql` | 迁移：子任务表 + 任务评论表 |
 
-## 表结构（7 张）
+## 表结构（15 张）
+
+### 核心业务表
 
 | 表名 | 说明 | 关键 FK |
 |------|------|---------|
 | `sys_user` | 用户表 | — |
 | `project_info` | 项目表 | owner_id → sys_user |
 | `task_info` | 任务表 | project_id → project_info (CASCADE), assignee_id/creator_id → sys_user |
+| `task_subtask` | 子任务表 | task_id → task_info (CASCADE) |
+| `task_comment` | 任务评论表 | task_id → task_info (CASCADE), user_id → sys_user (CASCADE) |
 | `task_log` | 进度记录表 | task_id → task_info (CASCADE) |
 | `task_summary` | 总结表 | project_id → project_info (CASCADE), task_id → task_info (SET NULL) |
+| `project_member` | 项目小组成员表 | project_id → project_info (CASCADE), user_id → sys_user (CASCADE) |
+
+### 辅助表
+
+| 表名 | 说明 | 关键 FK |
+|------|------|---------|
 | `operation_log` | 操作日志表 | operator_id → sys_user (SET NULL) |
 | `invite_code` | 邀请码表 | created_by → sys_user (SET NULL) |
+| `ai_quota_request` | AI 额度申请表 | user_id → sys_user |
+| `github_account` | GitHub 账号绑定表 | user_id → sys_user |
+| `project_github_repository` | 项目 GitHub 仓库绑定表 | project_id → project_info |
+| `github_authorized_repo` | GitHub 授权仓库表 | user_id → sys_user |
+| `file_cache` | 文件审核缓存表 | project_id → project_info |
 
 ## 预置用户
 
@@ -36,12 +55,16 @@ MySQL 8.x — 数据库名 `flowsync_simple`，字符集 `utf8mb4`
 mysql -u root -p -e "DROP DATABASE IF EXISTS flowsync_simple;"
 mysql -u root -p < database\init.sql
 
+:: 执行迁移
+mysql -u root -p flowsync_simple < database\migrate_add_project_members.sql
+mysql -u root -p flowsync_simple < database\migrate_add_subtasks_comments.sql
+
 :: 验证
 mysql -u root -p -e "USE flowsync_simple; SHOW TABLES;"
 ```
 
 ## 外键策略
 
-- 项目 → 任务 → 进度/总结：`ON DELETE CASCADE`（级联删除）
+- 项目 → 任务/子任务/评论/进度/成员：`ON DELETE CASCADE`（级联删除）
 - 总结 ↔ 任务：`ON DELETE SET NULL`（任务删除时总结保留但脱钩）
 - 日志/邀请码 ↔ 用户：`ON DELETE SET NULL`（用户删除时保留记录）

@@ -31,14 +31,17 @@ backend/
         │   └── JwtUtils.java                   # JWT 生成/解析/验证
         ├── controller/
         │   ├── AuthController.java             # 登录/注册
-        │   ├── ProjectController.java          # 项目 CRUD + 批量删除
-        │   ├── TaskController.java             # 任务 CRUD + 批量删除 + 数据隔离
+        │   ├── ProjectController.java          # 项目 CRUD + 批量删除 + 项目成员管理
+        │   ├── TaskController.java             # 任务 CRUD + 批量删除 + 数据隔离 + 子任务 + 评论
         │   ├── TaskLogController.java          # 进度记录
         │   ├── TaskSummaryController.java      # 总结管理
         │   ├── OverviewController.java         # 仪表盘统计
         │   ├── UserController.java             # 用户列表 + 修改密码/资料
         │   ├── AdminController.java            # 邀请码 + 角色升降级 + 项目转让
-        │   └── AiController.java               # AI 建议 + 拆解 + 导入
+        │   ├── AiController.java               # AI 建议 + 拆解 + 导入
+        │   ├── GitHubRepositoryController.java # GitHub 仓库管理 + 文件树 + 上传
+        │   ├── FileCacheController.java        # 文件审核缓存
+        │   └── GitHubAuthController.java       # GitHub OAuth 回调
         ├── service/
         │   ├── AuthService.java                # 登录(BCrypt)/注册(邀请码验证)/改密
         │   ├── ProjectInfoService.java         # CRUD + 权限校验 + 项目转让
@@ -50,10 +53,15 @@ backend/
         │   ├── InviteCodeService.java          # 邀请码生成/验证
         │   ├── OperationLogService.java        # 操作日志
         │   ├── QwenService.java                # DeepSeek AI
-        │   └── impl/                           # 10 个实现类
-        ├── mapper/                             # 7 个 MyBatis-Plus Mapper
-        ├── entity/                             # 7 个实体类
-        └── dto/                                # 9 个 DTO
+        │   ├── GitHubAuthService.java          # GitHub OAuth token 管理
+        │   ├── FileCacheService.java           # 文件审核缓存
+        │   ├── FileLockService.java            # 文件上传锁/排队
+        │   └── impl/                           # 14 个实现类
+        ├── integration/
+        │   └── GitHubApiClient.java            # GitHub REST API 封装
+        ├── mapper/                             # 15 个 MyBatis-Plus Mapper
+        ├── entity/                             # 15 个实体类
+        └── dto/                                # 12 个 DTO
 ```
 
 ## 核心依赖
@@ -75,31 +83,44 @@ backend/
 | 认证 | `/api/auth/login` | POST | 登录 → `{token, user}` |
 | 认证 | `/api/auth/register` | POST | 注册（负责人需邀请码） |
 | 项目 | `/api/projects` | GET/POST | 列表(数据隔离)/新建/编辑 |
-| 项目 | `/api/projects/{id}` | DELETE | 删除（级联） |
+| 项目 | `/api/projects/{id}` | DELETE | 删除（级联+GitHub仓库归档） |
 | 项目 | `/api/projects/batch-delete` | POST | 批量删除 |
+| 项目 | `/api/projects/{id}/archive` | POST | 归档（完成/只读） |
+| 项目 | `/api/projects/{id}/members` | GET/PUT | 获取/设置项目小组成员 |
+| 项目 | `/api/projects/{id}/available-members` | GET | 可选成员（排除管理员） |
 | 任务 | `/api/tasks` | GET/POST | 列表(管理员全透明)/新建/编辑 |
 | 任务 | `/api/tasks/{id}/status` | POST | 更新状态 |
 | 任务 | `/api/tasks/{id}` | DELETE | 删除 |
 | 任务 | `/api/tasks/batch-delete` | POST | 批量删除 |
-| 进度 | `/api/task-logs` | GET/POST | 列表/新增 |
+| 任务 | `/api/tasks/{id}/subtasks` | GET/POST | 子任务列表/新增 |
+| 任务 | `/api/tasks/{id}/subtasks/{sid}` | PUT/DELETE | 更新/删除子任务 |
+| 任务 | `/api/tasks/{id}/comments` | GET/POST | 评论列表/新增 |
+| 进度 | `/api/task-logs` | GET/POST | 列表/新增（已对接子任务自动记录） |
 | 总结 | `/api/summaries` | GET/POST | 列表/新增 |
 | 概览 | `/api/overview` | GET | 统计 |
 | 用户 | `/api/users` | GET | 用户列表 |
 | 用户 | `/api/users/update-password` | POST | 修改密码 |
-| 用户 | `/api/users/update-profile` | POST | 修改电话/邮箱 |
+| 用户 | `/api/users/update-profile` | POST | 修改电话/邮箱/头像 |
 | 管理 | `/api/admin/invite-code` | POST | 生成邀请码(2min) |
 | 管理 | `/api/admin/change-role` | POST | 升降级(降级自动处理项目转让) |
 | 管理 | `/api/admin/users` | GET | 管理视图用户列表 |
 | 管理 | `/api/admin/transfer-candidates` | GET | 项目接手人候选 |
 | AI | `/api/ai/task-suggestion` | POST | 单任务建议 |
-| AI | `/api/ai/task-plan` | POST | 任务拆解 |
+| AI | `/api/ai/task-plan` | POST | 任务拆解（限项目小组成员） |
 | AI | `/api/ai/task-plan/import` | POST | 导入拆解结果 |
+| GitHub | `/api/github/**` | 多个 | OAuth + 仓库绑定 + 文件树 + 上传 + Issue + PR |
+| 文件审核 | `/api/file-cache/**` | 多个 | 提交审核 + 批准/拒绝 + 上传GitHub |
+
+## 数据库表
+
+共 15 张表：`sys_user`, `project_info`, `task_info`, `task_log`, `task_summary`, `operation_log`, `invite_code`, `ai_quota_request`, `github_account`, `project_github_repository`, `github_authorized_repo`, `file_cache`, `project_member`, `task_subtask`, `task_comment`
 
 ## 启动
 
 ```powershell
 cd backend
-# 配置 application.yml（复制 application.example.yml → application.yml，填数据库密码）
-# 配置 .env（复制 .env.example → .env，填 DeepSeek API Key）
-java -Xmx1024m -classpath ".mvn/wrapper/maven-wrapper.jar" "-Dmaven.home=$PWD" "-Dmaven.multiModuleProjectDirectory=$PWD" org.apache.maven.wrapper.MavenWrapperMain spring-boot:run
+# 1. 复制 application.example.yml → application.yml，填数据库密码
+# 2. 复制 .env.example → .env，填 DeepSeek API Key
+# 3. 执行 database/init.sql + 所有 migrate_*.sql
+mvnw spring-boot:run
 ```
