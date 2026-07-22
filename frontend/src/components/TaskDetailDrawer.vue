@@ -63,7 +63,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { getSubtasks, addSubtask, updateSubtask, deleteSubtask, getComments, addComment } from '../api'
+import { getSubtasks, addSubtask, updateSubtask, deleteSubtask, getComments, addComment, updateTaskStatus, saveTaskLog } from '../api'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps({ visible: Boolean, task: Object })
@@ -89,17 +89,47 @@ watch(() => props.visible, async (v) => {
 
 async function toggleSubtask(st) {
   const res = await updateSubtask(props.task.id, st.id, { completed: !st.completed })
-  if (res.success) { st.completed = !st.completed; emit('updated') }
-}
-async function removeSubtask(id) {
-  const res = await deleteSubtask(props.task.id, id)
-  if (res.success) { subtasks.value = subtasks.value.filter(s => s.id !== id); emit('updated') }
+  if (res.success) {
+    st.completed = !st.completed
+    // 根据子任务完成情况自动更新任务状态
+    const allDone = subtasks.value.every(s => s.completed)
+    const anyProgress = subtasks.value.some(s => s.completed)
+    const done = subtasks.value.filter(s => s.completed).length
+    const progress = Math.round((done / subtasks.value.length) * 100)
+    // 同步创建进度记录
+    await saveTaskLog({ taskId: props.task.id, progressPercent: progress, content: `子任务「${st.title}」${st.completed ? '完成' : '取消完成'}，进度 ${done}/${subtasks.value.length}（${progress}%）` })
+    if (allDone && props.task.status !== '已完成') {
+      await updateTaskStatus(props.task.id, '已完成')
+      props.task.status = '已完成'
+    } else if (anyProgress && props.task.status === '未开始') {
+      await updateTaskStatus(props.task.id, '进行中')
+      props.task.status = '进行中'
+    }
+    emit('updated')
+  }
 }
 function startAddSubtask() { addingSubtask.value = true; newSubtaskTitle.value = '' }
 async function confirmAddSubtask() {
   if (!newSubtaskTitle.value.trim()) return
   const res = await addSubtask(props.task.id, newSubtaskTitle.value.trim())
-  if (res.success) { subtasks.value.push(res.data); addingSubtask.value = false; emit('updated') }
+  if (res.success) {
+    subtasks.value.push(res.data)
+    addingSubtask.value = false
+    const done = subtasks.value.filter(s => s.completed).length
+    await saveTaskLog({ taskId: props.task.id, progressPercent: Math.round((done / subtasks.value.length) * 100), content: `新增子任务「${newSubtaskTitle.value.trim()}」` })
+    emit('updated')
+  }
+}
+async function removeSubtask(id) {
+  const st = subtasks.value.find(s => s.id === id)
+  const res = await deleteSubtask(props.task.id, id)
+  if (res.success) {
+    subtasks.value = subtasks.value.filter(s => s.id !== id)
+    const done = subtasks.value.filter(s => s.completed).length
+    const progress = subtasks.value.length > 0 ? Math.round((done / subtasks.value.length) * 100) : 0
+    await saveTaskLog({ taskId: props.task.id, progressPercent: progress, content: st ? `删除子任务「${st.title}」` : '删除子任务' })
+    emit('updated')
+  }
 }
 async function sendComment() {
   if (!newComment.value.trim()) return

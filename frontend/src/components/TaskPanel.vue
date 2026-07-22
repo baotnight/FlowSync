@@ -46,21 +46,35 @@
           <el-tag :type="statusType(row.status)">{{ row.status }}</el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="子任务" width="120">
+        <template #default="{ row }">
+          <template v-if="row._subtaskTotal > 0">
+            <div style="display:flex;align-items:center;gap:6px">
+              <el-progress :percentage="row._subtaskPercent" :stroke-width="6" style="flex:1" :color="row._subtaskPercent === 100 ? '#67C23A' : '#f0a838'" />
+              <span style="font-size:11px;color:#c0b0a0;white-space:nowrap">{{ row._subtaskDone }}/{{ row._subtaskTotal }}</span>
+            </div>
+          </template>
+          <span v-else style="color:#a09080;font-size:12px">—</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="priority" label="优先级" width="80" />
       <el-table-column prop="dueDate" label="截止日期" width="110" />
-      <el-table-column label="操作" width="240">
+      <el-table-column label="操作" width="100">
         <template #default="{ row }">
-          <el-button v-if="isLeader || isAdmin" size="small" @click="openDialog(row)">编辑</el-button>
-          <el-button v-if="isAdmin || isProjectOwner(row)" size="small" type="primary" @click="openAssignDialog(row)">改负责人</el-button>
-          <el-button v-if="isAdmin || isProjectOwner(row) || row.assigneeId === currentUser.id" size="small" type="success" @click="openTaskCode(row)">
-            {{ isProjectOwner(row) || isAdmin ? '查看代码' : '我的代码' }}
-          </el-button>
-          <el-button v-if="canUpdateStatus(row)" size="small" type="warning" @click="openStatusDialog(row)">更新状态</el-button>
-          <el-popconfirm v-if="isLeader || isAdmin" title="确认删除？" @confirm="handleDelete(row.id)">
-            <template #reference>
-              <el-button size="small" type="danger">删除</el-button>
+          <el-dropdown trigger="click" @command="(cmd) => handleRowAction(cmd, row)">
+            <el-button size="small">操作<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item v-if="isLeader || isAdmin" command="edit">编辑</el-dropdown-item>
+                <el-dropdown-item v-if="isAdmin || isProjectOwner(row)" command="assign">改负责人</el-dropdown-item>
+                <el-dropdown-item v-if="isAdmin || isProjectOwner(row) || row.assigneeId === currentUser.id" command="code">
+                  {{ isProjectOwner(row) || isAdmin ? '查看代码' : '我的代码' }}
+                </el-dropdown-item>
+                <el-dropdown-item v-if="canUpdateStatus(row)" command="status">更新状态</el-dropdown-item>
+                <el-dropdown-item v-if="isLeader || isAdmin" command="delete" divided style="color:#F56C6C">删除</el-dropdown-item>
+              </el-dropdown-menu>
             </template>
-          </el-popconfirm>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
@@ -238,9 +252,17 @@ function getColumnTasks(status) {
 
 function applyFilters() {}
 
-function openTaskDetail(task) {
+async function openTaskDetail(task) {
   detailTask.value = task
   drawerVisible.value = true
+  // 加载子任务数据到 task 上供表格展示
+  const res = await getSubtasks(task.id)
+  if (res.success) {
+    const subs = res.data || []
+    task._subtaskTotal = subs.length
+    task._subtaskDone = subs.filter(s => s.completed).length
+    task._subtaskPercent = task._subtaskTotal > 0 ? Math.round((task._subtaskDone / task._subtaskTotal) * 100) : 0
+  }
 }
 
 // 拖拽
@@ -294,6 +316,16 @@ function canUpdateStatus(row) {
 function isProjectOwner(row) {
   const p = projects.value.find(x => x.id === row.projectId)
   return p && p.ownerId === props.currentUser?.id
+}
+
+function handleRowAction(cmd, row) {
+  switch (cmd) {
+    case 'edit': openDialog(row); break
+    case 'assign': openAssignDialog(row); break
+    case 'code': openTaskCode(row); break
+    case 'status': openStatusDialog(row); break
+    case 'delete': handleDelete(row.id); break
+  }
 }
 
 function openDialog(row) {

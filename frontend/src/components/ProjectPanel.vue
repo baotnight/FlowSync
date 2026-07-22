@@ -47,15 +47,18 @@
           </template>
         </template>
       </el-table-column>
-      <el-table-column v-if="isLeader || isAdmin" label="操作" width="220">
+      <el-table-column v-if="isLeader || isAdmin" label="操作" width="90">
         <template #default="{ row }">
-          <el-button size="small" @click="openDialog(row)">编辑</el-button>
-          <el-button v-if="isAdmin" size="small" type="primary" @click="openOwnerDialog(row)">改负责人</el-button>
-          <el-popconfirm v-if="isAdmin || row.status !== '已完成'" title="确认删除此项目？" @confirm="handleDelete(row.id)">
-            <template #reference>
-              <el-button size="small" type="danger">删除</el-button>
+          <el-dropdown trigger="click" @command="(cmd) => handleRowAction(cmd, row)">
+            <el-button size="small">操作<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="edit">编辑</el-dropdown-item>
+                <el-dropdown-item v-if="isAdmin" command="owner">改负责人</el-dropdown-item>
+                <el-dropdown-item v-if="isAdmin || row.status !== '已完成'" command="delete" divided style="color:#F56C6C">删除</el-dropdown-item>
+              </el-dropdown-menu>
             </template>
-          </el-popconfirm>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
@@ -243,6 +246,14 @@ async function confirmBindRepo() {
 
 const availableMembers = ref([])
 const selectedMemberIds = ref([])
+
+function handleRowAction(cmd, row) {
+  switch (cmd) {
+    case 'edit': openDialog(row); break
+    case 'owner': openOwnerDialog(row); break
+    case 'delete': handleDelete(row.id); break
+  }
+}
 
 async function openDialog(row) {
   form.value = row ? { ...row } : { name: '', description: '', status: '未开始', priority: '中', startDate: '', endDate: '' }
