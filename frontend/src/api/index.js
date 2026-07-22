@@ -62,6 +62,16 @@ export const updateTaskStatus = (taskId, status) =>
 export const deleteTask = (id) => api.delete(`/tasks/${id}`)
 export const batchDeleteTasks = (ids) => api.post('/tasks/batch-delete', { ids })
 
+// 子任务
+export const getSubtasks = (taskId) => api.get(`/tasks/${taskId}/subtasks`)
+export const addSubtask = (taskId, title) => api.post(`/tasks/${taskId}/subtasks`, { title })
+export const updateSubtask = (taskId, subtaskId, data) => api.put(`/tasks/${taskId}/subtasks/${subtaskId}`, data)
+export const deleteSubtask = (taskId, subtaskId) => api.delete(`/tasks/${taskId}/subtasks/${subtaskId}`)
+
+// 任务评论
+export const getComments = (taskId) => api.get(`/tasks/${taskId}/comments`)
+export const addComment = (taskId, content) => api.post(`/tasks/${taskId}/comments`, { content })
+
 // 进度记录
 export const getTaskLogs = (taskId) => api.get('/task-logs', { params: { taskId } })
 export const saveTaskLog = (data) => api.post('/task-logs', data)

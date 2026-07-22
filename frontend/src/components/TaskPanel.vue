@@ -16,7 +16,24 @@
       </div>
     </div>
 
-    <el-table :data="tasks" border stripe v-loading="loading" row-key="id"
+    <!-- 搜索筛选栏 -->
+    <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <el-input v-model="searchKeyword" placeholder="搜索任务..." size="default" style="width:240px" clearable @clear="searchKeyword=''" @input="applyFilters">
+        <template #prefix><el-icon><Search /></el-icon></template>
+      </el-input>
+      <el-select v-model="filterPriority" placeholder="优先级筛选" size="default" style="width:130px" clearable @change="applyFilters">
+        <el-option label="高" value="高" /><el-option label="中" value="中" /><el-option label="低" value="低" />
+      </el-select>
+      <el-select v-model="filterAssignee" placeholder="负责人筛选" size="default" style="width:150px" clearable @change="applyFilters">
+        <el-option v-for="u in users" :key="u.id" :label="u.realName" :value="u.id" />
+      </el-select>
+      <el-button-group style="margin-left:auto">
+        <el-button :type="viewMode === 'table' ? 'primary' : ''" size="default" @click="viewMode = 'table'">表格</el-button>
+        <el-button :type="viewMode === 'kanban' ? 'primary' : ''" size="default" @click="viewMode = 'kanban'">看板</el-button>
+      </el-button-group>
+    </div>
+
+    <el-table v-if="viewMode === 'table'" :data="tasks" border stripe v-loading="loading" row-key="id"
               @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="45" />
       <el-table-column prop="id" label="ID" width="60" />
@@ -108,6 +125,38 @@
       </template>
     </el-dialog>
 
+    <!-- 看板视图 -->
+    <div v-if="viewMode === 'kanban'" class="kanban-board">
+      <div class="kanban-column" v-for="col in kanbanColumns" :key="col.status"
+           @dragover.prevent @drop="handleDrop($event, col.status)"
+           :style="{ borderTop: '3px solid ' + col.color }">
+        <div class="kanban-col-header">
+          <span>{{ col.label }}</span>
+          <el-tag size="small" round>{{ getColumnTasks(col.status).length }}</el-tag>
+        </div>
+        <div class="kanban-cards">
+          <div v-for="task in getColumnTasks(col.status)" :key="task.id"
+               class="kanban-card" draggable="true"
+               @dragstart="handleDragStart($event, task.id)"
+               @click="openTaskDetail(task)"
+               :style="{ borderLeft: '4px solid ' + priorityColor(task.priority) }">
+            <div class="kc-title">{{ task.title }}</div>
+            <div class="kc-meta">
+              <span>{{ task.assigneeName || '未指派' }}</span>
+              <el-tag :type="priorityType(task.priority)" size="small">{{ task.priority }}</el-tag>
+            </div>
+            <div class="kc-footer" v-if="task.dueDate">
+              <span>{{ task.dueDate }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 任务详情抽屉 -->
+    <TaskDetailDrawer :visible="drawerVisible" :task="detailTask"
+                      @close="drawerVisible = false" @updated="fetchTasks" />
+
     <!-- 更改任务负责人弹窗 -->
     <el-dialog title="更改负责人" v-model="assignDialogVisible" width="400px">
       <el-form :model="assignForm" label-width="80px">
@@ -134,8 +183,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { getTasks, saveTask, updateTaskStatus, deleteTask, batchDeleteTasks, getProjects, getUsers, githubPublishTask } from '../api'
+import { getTasks, saveTask, updateTaskStatus, deleteTask, batchDeleteTasks, getProjects, getUsers, githubPublishTask, getSubtasks, getComments } from '../api'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import TaskDetailDrawer from './TaskDetailDrawer.vue'
 
 const props = defineProps({ currentUser: Object })
 const isLeader = computed(() => props.currentUser?.role === '负责人')
@@ -157,6 +207,62 @@ const form = ref({})
 const statusForm = ref({})
 const statuses = ['未开始', '进行中', '已完成']
 const priorities = ['低', '中', '高']
+
+// 看板视图
+const viewMode = ref('table')
+const searchKeyword = ref('')
+const filterPriority = ref('')
+const filterAssignee = ref('')
+const drawerVisible = ref(false)
+const detailTask = ref(null)
+const draggedTaskId = ref(null)
+
+const kanbanColumns = [
+  { status: '未开始', label: '待办', color: '#f0a838' },
+  { status: '进行中', label: '进行中', color: '#f8c860' },
+  { status: '已完成', label: '已完成', color: '#67C23A' },
+]
+
+const filteredTasks = computed(() => {
+  return tasks.value.filter(t => {
+    if (searchKeyword.value && !t.title.toLowerCase().includes(searchKeyword.value.toLowerCase())) return false
+    if (filterPriority.value && t.priority !== filterPriority.value) return false
+    if (filterAssignee.value && t.assigneeId !== filterAssignee.value) return false
+    return true
+  })
+})
+
+function getColumnTasks(status) {
+  return filteredTasks.value.filter(t => t.status === status)
+}
+
+function applyFilters() {}
+
+function openTaskDetail(task) {
+  detailTask.value = task
+  drawerVisible.value = true
+}
+
+// 拖拽
+function handleDragStart(e, taskId) {
+  draggedTaskId.value = taskId
+  e.dataTransfer.effectAllowed = 'move'
+}
+async function handleDrop(e, newStatus) {
+  const taskId = draggedTaskId.value
+  if (!taskId) return
+  draggedTaskId.value = null
+  const task = tasks.value.find(t => t.id === taskId)
+  if (!task || task.status === newStatus) return
+  const res = await updateTaskStatus(taskId, newStatus)
+  if (res.success) {
+    task.status = newStatus
+    ElMessage.success(`已移至「${newStatus}」`)
+  }
+}
+
+function priorityColor(p) { return p === '高' ? '#F56C6C' : p === '中' ? '#f0a838' : '#67C23A' }
+function priorityType(p) { return p === '高' ? 'danger' : p === '中' ? 'warning' : 'info' }
 
 onMounted(async () => {
   loading.value = true
@@ -296,3 +402,71 @@ function statusType(status) {
   return status === '已完成' ? 'success' : status === '进行中' ? 'warning' : 'info'
 }
 </script>
+
+<style scoped>
+/* 看板 */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  min-height: 400px;
+}
+.kanban-column {
+  background: rgba(20, 14, 8, 0.2);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kanban-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff8f2;
+  font-weight: 700;
+  font-size: 15px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(230,162,60,0.1);
+}
+.kanban-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  overflow-y: auto;
+}
+.kanban-card {
+  background: rgba(20, 14, 8, 0.4);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid rgba(230,162,60,0.1);
+}
+.kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  border-color: rgba(240,168,56,0.3);
+}
+.kanban-card:active { cursor: grabbing; }
+.kc-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f5e5d8;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.kc-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #c0b0a0;
+  margin-bottom: 4px;
+}
+.kc-footer {
+  font-size: 11px;
+  color: #a09080;
+}
+</style>

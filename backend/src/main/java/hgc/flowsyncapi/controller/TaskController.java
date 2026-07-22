@@ -4,13 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import hgc.flowsyncapi.common.ApiResponse;
 import hgc.flowsyncapi.entity.*;
 import hgc.flowsyncapi.integration.GitHubApiClient;
-import hgc.flowsyncapi.mapper.ProjectGithubRepoMapper;
+import hgc.flowsyncapi.mapper.*;
 import hgc.flowsyncapi.service.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -22,19 +22,28 @@ public class TaskController {
     private final ProjectGithubRepoMapper repoMapper;
     private final GitHubAuthService githubAuthService;
     private final GitHubApiClient githubApiClient;
+    private final TaskSubtaskMapper subtaskMapper;
+    private final TaskCommentMapper commentMapper;
+    private final UserMapper userMapper;
 
     public TaskController(TaskInfoService taskInfoService,
                           ProjectInfoService projectInfoService,
                           OperationLogService logService,
                           ProjectGithubRepoMapper repoMapper,
                           GitHubAuthService githubAuthService,
-                          GitHubApiClient githubApiClient) {
+                          GitHubApiClient githubApiClient,
+                          TaskSubtaskMapper subtaskMapper,
+                          TaskCommentMapper commentMapper,
+                          UserMapper userMapper) {
         this.taskInfoService = taskInfoService;
         this.projectInfoService = projectInfoService;
         this.logService = logService;
         this.repoMapper = repoMapper;
         this.githubAuthService = githubAuthService;
         this.githubApiClient = githubApiClient;
+        this.subtaskMapper = subtaskMapper;
+        this.commentMapper = commentMapper;
+        this.userMapper = userMapper;
     }
 
     @GetMapping
@@ -46,7 +55,7 @@ public class TaskController {
         // 管理员看全部；组员/负责人按数据隔离规则过滤
         if (!"管理员".equals(role)) {
             if (projectId == null || !projectInfoService.isProjectOwner(projectId, userId)) {
-                tasks.removeIf(t -> !t.getAssigneeId().equals(userId) && !t.getCreatorId().equals(userId)
+                tasks.removeIf(t -> !userId.equals(t.getAssigneeId()) && !userId.equals(t.getCreatorId())
                         && !projectInfoService.isProjectOwner(t.getProjectId(), userId));
             }
         }
@@ -123,5 +132,85 @@ public class TaskController {
         }
         logService.log(userId, "批量删除任务", "任务", null, "删除 " + count + " 个任务");
         return ApiResponse.ok("成功删除 " + count + " 个任务", Map.of("deleted", count));
+    }
+
+    // ===== 子任务 =====
+
+    @GetMapping("/{taskId}/subtasks")
+    public ApiResponse<List<TaskSubtask>> getSubtasks(@PathVariable Long taskId) {
+        return ApiResponse.ok(subtaskMapper.selectList(
+                new QueryWrapper<TaskSubtask>().eq("task_id", taskId).orderByAsc("id")));
+    }
+
+    @PostMapping("/{taskId}/subtasks")
+    public ApiResponse<TaskSubtask> addSubtask(@PathVariable Long taskId,
+                                                @RequestBody Map<String, Object> body) {
+        TaskSubtask st = new TaskSubtask();
+        st.setTaskId(taskId);
+        st.setTitle(body.get("title").toString());
+        st.setCompleted(false);
+        subtaskMapper.insert(st);
+        return ApiResponse.ok("子任务已添加", st);
+    }
+
+    @PutMapping("/{taskId}/subtasks/{subtaskId}")
+    public ApiResponse<Void> updateSubtask(@PathVariable Long taskId,
+                                            @PathVariable Long subtaskId,
+                                            @RequestBody Map<String, Object> body) {
+        TaskSubtask st = subtaskMapper.selectById(subtaskId);
+        if (st != null && st.getTaskId().equals(taskId)) {
+            if (body.containsKey("title")) st.setTitle(body.get("title").toString());
+            if (body.containsKey("completed")) st.setCompleted((Boolean) body.get("completed"));
+            subtaskMapper.updateById(st);
+        }
+        return ApiResponse.ok("已更新", null);
+    }
+
+    @DeleteMapping("/{taskId}/subtasks/{subtaskId}")
+    public ApiResponse<Void> deleteSubtask(@PathVariable Long taskId,
+                                            @PathVariable Long subtaskId) {
+        subtaskMapper.delete(new QueryWrapper<TaskSubtask>()
+                .eq("id", subtaskId).eq("task_id", taskId));
+        return ApiResponse.ok("已删除", null);
+    }
+
+    // ===== 评论 =====
+
+    @GetMapping("/{taskId}/comments")
+    public ApiResponse<List<Map<String, Object>>> getComments(@PathVariable Long taskId) {
+        List<TaskComment> comments = commentMapper.selectList(
+                new QueryWrapper<TaskComment>().eq("task_id", taskId).orderByAsc("create_time"));
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (TaskComment c : comments) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", c.getId());
+            item.put("taskId", c.getTaskId());
+            item.put("userId", c.getUserId());
+            item.put("content", c.getContent());
+            item.put("createTime", c.getCreateTime() != null ? c.getCreateTime().toString() : "");
+            User u = userMapper.selectById(c.getUserId());
+            item.put("userName", u != null ? u.getRealName() : "未知");
+            result.add(item);
+        }
+        return ApiResponse.ok(result);
+    }
+
+    @PostMapping("/{taskId}/comments")
+    public ApiResponse<Map<String, Object>> addComment(@PathVariable Long taskId,
+                                                        @RequestBody Map<String, String> body,
+                                                        HttpServletRequest request) {
+        Long userId = AuthController.getCurrentUserId(request);
+        TaskComment c = new TaskComment();
+        c.setTaskId(taskId);
+        c.setUserId(userId);
+        c.setContent(body.get("content"));
+        commentMapper.insert(c);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("id", c.getId());
+        result.put("content", c.getContent());
+        result.put("createTime", c.getCreateTime() != null ? c.getCreateTime().toString() : "");
+        User u = userMapper.selectById(userId);
+        result.put("userName", u != null ? u.getRealName() : "未知");
+        return ApiResponse.ok("评论已发送", result);
     }
 }
