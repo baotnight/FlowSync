@@ -428,10 +428,15 @@ npm config set registry https://registry.npmmirror.com
 
 ```
 appForXiaoxueqi/
-├── README.md
+├── README.md                         # 项目文档
 ├── .gitignore                        # 排除 .env / target / node_modules
-├── start.bat                         # 一键启动（CMD / 双击，自动加载 .env）
-├── start.ps1                         # 一键启动（PowerShell，自动加载 .env）
+├── start.bat                         # 一键启动（CMD / 双击）
+├── start.ps1                         # 一键启动（PowerShell）
+├── addition/                         # 参考文档与设计资源（非项目代码）
+│   ├── FlowSync_需求规格说明书.docx
+│   ├── FlowSync_GitHub协作扩展实施指南_简版.docx
+│   ├── picsrc/                       # 设计素材（字体/图片/视频源文件）
+│   └── views/                        # 参考页面模板
 ├── database/
 │   ├── README.md
 │   └── init.sql                      # 7 张表 DDL + BCrypt 预置 + ON DELETE CASCADE
@@ -584,7 +589,7 @@ appForXiaoxueqi/
 
 | 日期 | 变更 |
 |------|------|
-| 2026-07-21 | 项目小组：`project_member` 表，创建项目时选组员，AI 拆解限小组成员内分配 |
+| 2026-07-21 | 项目结构规整：非代码文件移入 `addition/`，根目录仅前后端 + 启动脚本 + README |
 | 2026-07-21 | 自定义字体：Inter + Zen Maru Gothic + JetBrains Mono + Great Vibes，`@font-face` 引入 |
 | 2026-07-21 | 看板视图：三列拖拽（待办/进行中/已完成）切换任务状态，表格/看板一键切换 |
 | 2026-07-21 | 登录页重构：品牌标识 + 表单标签 + radio-button 角色选择 + 卡片居中 |
